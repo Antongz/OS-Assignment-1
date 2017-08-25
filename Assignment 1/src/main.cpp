@@ -80,7 +80,9 @@ int main(int argc, char *argv[]) {
     for (it = processes.begin(); it < processes.end(); it++) {
         std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->priority << ' ' << (*it)->age << ' ' << (*it)->totalTickets << '\n';
     }
-    
+
+    Process p0 = **processes.begin();
+    std::cout << p0.processIndex << '\n';
 
     // Close the file
     processFile.close();
