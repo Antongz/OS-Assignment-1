@@ -76,7 +76,11 @@ int main(int argc, char *argv[]) {
         
     }
     
-    std::cout << (*processes.begin())->processIndex << ' ' << (*processes.begin())->arrival << ' ' << (*processes.begin())->priority << ' ' << (*processes.begin())->age << ' ' << (*processes.begin())->totalTickets << '\n';
+    std::vector<Process *>::iterator it;
+    for (it = processes.begin(); it < processes.end(); it++) {
+        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->priority << ' ' << (*it)->age << ' ' << (*it)->totalTickets << '\n';
+    }
+    
 
     // Close the file
     processFile.close();
