@@ -17,8 +17,11 @@
     TicketBooker();
     // Start the scheduling algorithm
     void start();
-    // Insert an element at the head of the list
-    void insert(Process);
+    // Insert an element in queue one(sorted by priority then arrival time then process index)
+    void insertQueueOne(Process);
+    // Insert an element in queue two(sorted by arrival time then process index)
+    void insertQueueTwo(Process);
+
 
  private:
     int const QUEUE_ONE_TIME_QUOTA = 5;
