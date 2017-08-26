@@ -116,9 +116,9 @@ int main(int argc, char *argv[]) {
     }
 
     ticketBooker.initializeQueues(argv[1]);
-    ticketBooker.printQueuesContent();
+    // ticketBooker.printQueuesContent();
     ticketBooker.start();
-    std::cout << '\n';
+    // std::cout << '\n';
     ticketBooker.printQueuesContent();
 }
 
@@ -278,10 +278,10 @@ void Scheduling::start() {
     /* ============================ INSERT PROMOTED PROCESS THIRD(START) ========================= */
             queue_two.promote(&queue_one);    // Promote processes in queue_two
     /* ============================ INSERT PROMOTED PROCESS THIRD(END) ========================= */
-            if (timer % 5 == 0) {
-                std::cout << "Time (" << timer << ")\n"; 
-                printQueuesContent();
-            }
+            // if (timer % 5 == 0) {
+            //     std::cout << "Time (" << timer << ")\n"; 
+            //     printQueuesContent();
+            // }
         }
 
         while (!queue_two.isEmpty() && queue_one.isEmpty()) { // Process queue_two
@@ -342,7 +342,8 @@ void Scheduling::start() {
                     queue_two.tailInsert(inQueueProcess);
                 } else {    // No new process has arrived
                     inQueueProcess->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;  // Reset time quota
-                    queue_two.insertProcess(inQueueProcess, true);
+                    // queue_two.insertProcess(inQueueProcess, true);
+                    queue_two.tailInsert(inQueueProcess);
                 }
             } else {
                 inQueueProcess->end = timer;
@@ -353,8 +354,8 @@ void Scheduling::start() {
             queue_two.promote(&queue_one);    // Promote processes from queue_two to queue_one
     /* ============================ INSERT PROMOTED PROCESS THIRD(END) ========================= */
 
-            std::cout << "Time (" << timer << ")\n"; 
-            printQueuesContent();
+            // std::cout << "Time (" << timer << ")\n"; 
+            // printQueuesContent();
         }  
 
         if (queue_one.isEmpty() && queue_two.isEmpty() && !hasNotArrived.isEmpty()) {   // Fast forward time
@@ -362,9 +363,9 @@ void Scheduling::start() {
             timer = newArrivalProcess->arrival;
             do {
                 if (newArrivalProcess->priority > THRESHOLD) {  // Insert into queue_one
-                    queue_one.insertProcess(newArrivalProcess, true);
+                    queue_one.insertProcess(newArrivalProcess, false);
                 } else {    // Insert into queue_two
-                    queue_two.insertProcess(newArrivalProcess, true);
+                    queue_two.insertProcess(newArrivalProcess, false);
                 }
                 hasNotArrived.removeHead();
                 newArrivalProcess = hasNotArrived.getHead();
@@ -375,23 +376,23 @@ void Scheduling::start() {
 }
 
 void Scheduling::printQueuesContent() {
-    std::cout << "===========================================\n";
-    std::cout << "Queue 1\n";
-    queue_one.printContent();
-    std::cout << "===========================================\n";
-    std::cout << "Queue 2\n";
-    queue_two.printContent();
-    std::cout << "===========================================\n";
+    // std::cout << "===========================================\n";
+    // std::cout << "Queue 1\n";
+    // queue_one.printContent();
+    // std::cout << "===========================================\n";
+    // std::cout << "Queue 2\n";
+    // queue_two.printContent();
+    // std::cout << "===========================================\n";
     // std::cout << "HasNotArrived\n";
     // hasNotArrived.printContent();
     // std::cout << "===========================================\n";
-    std::cout << "Terminated Processes\n";
+    // std::cout << "Terminated Processes\n";
     std::vector<Process*>::iterator it;
     std::cout << "name" << "\t" << "arrival" << "\t" << "end" << "\t" << "ready" << "\t" << "running" << "\t" << "waiting" << '\n';
     for (it = terminatedProcesses.begin(); it < terminatedProcesses.end(); it++) {
         std::cout << (*it)->processIndex << "\t\t" << (*it)->arrival << "\t\t" << (*it)->end << "\t\t" << (*it)->ready << "\t\t" << (*it)->running << "\t\t" << (*it)->waiting << "\t\t" << '\n';
     }
-    std::cout << "===========================================\n";
+    // std::cout << "===========================================\n";
 }
 
 void QueueOne::insertProcess(Process *proc, bool strict) {
