@@ -16,8 +16,9 @@ public:
     long remainingTimeQuota = 0;    // Total time quota in queue two
     long waiting = 0;   // Total time the process has waited since it's first run
     int age = 0;    // Ageing mechanism used to process in queue two
-    long end = 0;   // The time the process used up it's totalTickets
+    long end = -1;   // The time the process used up it's totalTickets
     int priority;   // Priority number of the process
+    long ready = -1;     // The time it first ran
     std::string processIndex;   // Process ID
 };
 
@@ -201,7 +202,7 @@ void Scheduling::start() {
     // Process *proc3 = hasNotArrived.getHead();
     // std::cout << proc3->processIndex << ' ' << proc3->arrival << ' ' << proc3->priority << ' ' << proc3->age << ' ' << proc3->totalTickets << '\n';
     // hasNotArrived.removeHead();
-    // std::cout << "===BREAK POINT PASSED!===";
+    
     while (!queue_one.isEmpty() || !queue_two.isEmpty() || !hasNotArrived.isEmpty()) {
         int processTime = 0;
         Process *inQueueProcess, *newArrivalProcess;
@@ -211,6 +212,10 @@ void Scheduling::start() {
             inQueueProcess = queue_one.popHead();   // Process the highest priority first
             if (inQueueProcess->sinceFirstRun == -1) {
                 inQueueProcess->sinceFirstRun = timer;
+            }
+            
+            if (inQueueProcess->ready == -1) {
+                inQueueProcess->ready = timer;
             }
 
             while (inQueueProcess->totalTickets > 0 && processTime < QUEUE_ONE_TIME_QUOTA) {
@@ -244,12 +249,12 @@ void Scheduling::start() {
                     inQueueProcess->runningInQueueOne = 0;  // Reset counter for total time running in queue_one
                     if (inQueueProcess->priority <= THRESHOLD) {    // Demote process
                         inQueueProcess->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;  // Initialize time quota
-                        queue_two.insertProcess(inQueueProcess, false);
+                        queue_two.insertProcess(inQueueProcess, true);
                     } else {
-                        queue_one.insertProcess(inQueueProcess, false); // Insert back into queue_one
+                        queue_one.insertProcess(inQueueProcess, true); // Insert back into queue_one
                     }
                 } else {
-                    queue_one.insertProcess(inQueueProcess, false); // Insert back into queue_one
+                    queue_one.insertProcess(inQueueProcess, true); // Insert back into queue_one
                 }
             } else {    // Pre-empted process has finished its job
                 inQueueProcess->end = timer;
@@ -280,6 +285,12 @@ void Scheduling::printQueuesContent() {
     std::cout << "HasNotArrived\n";
     hasNotArrived.printContent();
     std::cout << "===========================================\n";
+    std::cout << "Terminated Processes\n";
+    std::vector<Process*>::iterator it;
+    for (it = terminatedProcesses.begin(); it < terminatedProcesses.end(); it++) {
+        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->end << ' ' << (*it)->ready << ' ' << (*it)->running << ' ' << (*it)->waiting << '\n';
+    }
+    std::cout << "===========================================\n";
 }
 
 void QueueOne::insertProcess(Process *proc, bool strict) {
@@ -306,9 +317,8 @@ void QueueOne::insertProcess(Process *proc, bool strict) {
         queue.insert(queue.begin(), proc);
     } else if (i == queue.size()) {   // Process has lowest priority
         queue.insert(queue.end(), proc);
-     } 
-    else {
-        queue.insert(queue.begin() + i - 1, proc);
+    } else {
+        queue.insert(queue.begin() + i, proc);
     }
 }
 
