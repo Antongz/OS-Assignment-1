@@ -328,13 +328,18 @@ void Scheduling::start() {
                     }
                 }
             }
+
+            // std::cout << "Process time: " << processTime << '\n';  
+            
     /* ============================ INSERT NEW ARRIVAL PROCESS FIRST(END) ========================= */
+            inQueueProcess->running += processTime;
             queue_two.incrementWaiting(processTime);
             queue_two.ageing(8);    // Age the processes in queue_two
     /* ============================ INSERT PRE-EMPTED PROCESS SECOND(START) ========================= */
             if (inQueueProcess->totalTickets != 0) {
                 if (inQueueProcess->remainingTimeQuota != 0) {  // New process has arrived in queue_one
-                    queue_two.headInsert(inQueueProcess);
+                    // queue_two.headInsert(inQueueProcess);
+                    queue_two.tailInsert(inQueueProcess);
                 } else {    // No new process has arrived
                     inQueueProcess->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;  // Reset time quota
                     queue_two.insertProcess(inQueueProcess, true);
@@ -347,12 +352,10 @@ void Scheduling::start() {
     /* ============================ INSERT PROMOTED PROCESS THIRD(START) ========================= */
             queue_two.promote(&queue_one);    // Promote processes from queue_two to queue_one
     /* ============================ INSERT PROMOTED PROCESS THIRD(END) ========================= */
-        }
 
-        if (timer % 5 == 0) {
             std::cout << "Time (" << timer << ")\n"; 
             printQueuesContent();
-        }
+        }  
 
         if (queue_one.isEmpty() && queue_two.isEmpty() && !hasNotArrived.isEmpty()) {   // Fast forward time
             newArrivalProcess = hasNotArrived.getHead();
@@ -473,14 +476,14 @@ void QueueTwo::tailInsert(Process *proc) {
 void QueueOne::printContent() {
     std::vector<Process*>::iterator it;
     for (it = queue.begin(); it < queue.end(); it++) {
-        std::cout << (*it)->processIndex << '\t' << (*it)->arrival << '\t' << (*it)->end << '\t' << (*it)->ready << '\t' << (*it)->running << '\t' << (*it)->waiting << '\t' << (*it)->age << '\t' << (*it)->priority << '\n';
+        std::cout << (*it)->processIndex << "\t\t" << (*it)->arrival << "\t\t" << (*it)->end << "\t\t" << (*it)->ready << "\t\t" << (*it)->running << "\t\t" << (*it)->waiting << "\t\t" << (*it)->age << "\t\t" << (*it)->priority << '\n';
     }
 }
 
 void QueueTwo::printContent() {
     std::vector<Process*>::iterator it;
     for (it = queue.begin(); it < queue.end(); it++) {
-        std::cout << (*it)->processIndex << '\t' << (*it)->arrival << '\t' << (*it)->end << '\t' << (*it)->ready << '\t' << (*it)->running << '\t' << (*it)->waiting << '\t' << (*it)->age << '\t' << (*it)->priority << '\n';
+        std::cout << (*it)->processIndex << "\t\t" << (*it)->arrival << "\t\t" << (*it)->end << "\t\t" << (*it)->ready << "\t\t" << (*it)->running << "\t\t" << (*it)->waiting << "\t\t" << (*it)->age << "\t\t" << (*it)->priority << '\n';
     }
 }
 
