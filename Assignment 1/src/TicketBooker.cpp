@@ -42,6 +42,8 @@ private:
 /* ================= QueueTwo class ================= */
 class QueueTwo {
 public:
+    // Insert an element at the head
+    void headInsert(Process*);
     // Insert an element in queue two(sorted by arrival time then process index)
     void insertProcess(Process*, bool);
     // Pop head of the queue
@@ -50,8 +52,10 @@ public:
     void printContent();
     // Increment waiting time of all process if a process has already ran
     void incrementWaiting(int);
-    // Ageing mechanism
-    void ageing(int, QueueOne*, int const);
+    // Age the processes
+    void ageing(int);
+    // Promote aged processes
+    void promote(QueueOne*);
     // Check if queue is empty
     bool isEmpty();
 
@@ -79,6 +83,7 @@ private:
 /* ================= Scheduling class ================= */
 class Scheduling {
 public:
+    static int const THRESHOLD = 2;
     // Start the scheduling algorithm
     void start();
     // Read the file and initialize all queues
@@ -89,7 +94,6 @@ public:
 private:
     int const QUEUE_ONE_TIME_QUOTA = 5;
     int const QUEUE_TWO_TIME_QUOTA = 20;
-    int const THRESHOLD = 2;
     long timer = 0;
     QueueOne queue_one;
     QueueTwo queue_two;
@@ -237,11 +241,12 @@ void Scheduling::start() {
                     }
                 }
             }
-            
     /* ============================ INSERT NEW ARRIVAL PROCESS FIRST(END) ========================= */
             inQueueProcess->running += processTime;
             inQueueProcess->runningInQueueOne += processTime;
             queue_one.incrementWaiting(processTime);
+            queue_two.incrementWaiting(processTime);    // Increment waiting time of all processes in queue_two if a process has already ran
+            queue_two.ageing(8);    // Age the processes in queue_two
     /* ============================ INSERT PRE-EMPTED PROCESS SECOND(START) ========================= */
             if (inQueueProcess->totalTickets != 0) {
                 if (inQueueProcess->runningInQueueOne == 25) {
@@ -262,20 +267,77 @@ void Scheduling::start() {
             }
     /* ============================ INSERT PRE-EMPTED PROCESS SECOND(END) ========================= */
     /* ============================ INSERT PROMOTED PROCESS THIRD(START) ========================= */
-            queue_two.incrementWaiting(processTime);    // Increment waiting time of all processes in queue_two if a process has already ran
-            queue_two.ageing(8, &queue_one, THRESHOLD);    // Age the processes in queue_two
+            queue_two.promote(&queue_one);    // Promote processes in queue_two
     /* ============================ INSERT PROMOTED PROCESS THIRD(END) ========================= */
-
             if (timer % 5 == 0) {
                 std::cout << "Time (" << timer << ")\n"; 
                 printQueuesContent();
             }
         }
 
-        // while (queue_two.size() > 0 && queue_one.size() == 0) { // Process queue_two
-        //     processTime = 0;
-            
-        // }
+        while (!queue_two.isEmpty() && queue_one.isEmpty()) { // Process queue_two
+            processTime = 0;
+            inQueueProcess = queue_two.popHead();
+            if (inQueueProcess->sinceFirstRun == -1) {   // Store the time this process first ran
+                inQueueProcess->sinceFirstRun = timer;
+            }
+            inQueueProcess->age = 0;    // Reset age
+
+            while (inQueueProcess->totalTickets > 0 && inQueueProcess->remainingTimeQuota > 0 && queue_one.isEmpty()) {
+                timer += 1;
+                processTime += 1;
+                inQueueProcess->totalTickets -= 1;
+                inQueueProcess->remainingTimeQuota -= 1;
+    /* ============================ INSERT NEW ARRIVAL PROCESS FIRST(START) ========================= */
+                if (!hasNotArrived.isEmpty()) {
+                    newArrivalProcess = hasNotArrived.getHead();
+                    while (newArrivalProcess->arrival == timer) {   // Check if there are processes that has arrived
+                        if (newArrivalProcess->priority > THRESHOLD) {  // Insert into queue_one
+                            queue_one.insertProcess(newArrivalProcess, false);
+                        } else {    // Insert into queue_two
+                            newArrivalProcess->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;
+                            queue_two.insertProcess(newArrivalProcess, false);
+                        }
+                        hasNotArrived.removeHead();
+                        newArrivalProcess = hasNotArrived.getHead();
+                    }
+                }
+            }
+    /* ============================ INSERT NEW ARRIVAL PROCESS FIRST(END) ========================= */
+            queue_two.incrementWaiting(processTime);
+            queue_two.ageing(8);    // Age the processes in queue_two
+    /* ============================ INSERT PRE-EMPTED PROCESS SECOND(START) ========================= */
+            if (inQueueProcess->totalTickets != 0) {
+                if (inQueueProcess->remainingTimeQuota != 0) {  // New process has arrived in queue_one
+                    queue_two.headInsert(inQueueProcess);
+                } else {    // No new process has arrived
+                    inQueueProcess->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;  // Reset time quota
+                    queue_two.insertProcess(inQueueProcess, true);
+                }
+            } else {
+                inQueueProcess->end = timer;
+                terminatedProcesses.insert(terminatedProcesses.end(), inQueueProcess);
+            }
+    /* ============================ INSERT PRE-EMPTED PROCESS SECOND(END) ========================= */
+    /* ============================ INSERT PROMOTED PROCESS THIRD(START) ========================= */
+            queue_two.promote(&queue_one);    // Promote processes from queue_two to queue_one
+    /* ============================ INSERT PROMOTED PROCESS THIRD(END) ========================= */
+        }
+
+        if (queue_one.isEmpty() && queue_two.isEmpty() && !hasNotArrived.isEmpty()) {   // Fast forward time
+            newArrivalProcess = hasNotArrived.getHead();
+            timer = newArrivalProcess->arrival;
+            do {
+                if (newArrivalProcess->priority > THRESHOLD) {  // Insert into queue_one
+                    queue_one.insertProcess(newArrivalProcess, true);
+                } else {    // Insert into queue_two
+                    queue_two.insertProcess(newArrivalProcess, true);
+                }
+                hasNotArrived.removeHead();
+                newArrivalProcess = hasNotArrived.getHead();
+            } while (newArrivalProcess->arrival == timer);  // Check if there are still process that has arrived
+
+        }
     }
 }
 
@@ -285,15 +347,15 @@ void Scheduling::printQueuesContent() {
     queue_one.printContent();
     std::cout << "===========================================\n";
     std::cout << "Queue 2\n";
-    // queue_two.printContent();
+    queue_two.printContent();
     std::cout << "===========================================\n";
-    std::cout << "HasNotArrived\n";
+    // std::cout << "HasNotArrived\n";
     // hasNotArrived.printContent();
-    std::cout << "===========================================\n";
+    // std::cout << "===========================================\n";
     std::cout << "Terminated Processes\n";
     std::vector<Process*>::iterator it;
     for (it = terminatedProcesses.begin(); it < terminatedProcesses.end(); it++) {
-        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->end << ' ' << (*it)->ready << ' ' << (*it)->running << ' ' << (*it)->waiting << '\n';
+        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->end << ' ' << (*it)->ready << ' ' << (*it)->running << ' ' << (*it)->waiting << ' ' << (*it)->age << ' ' << (*it)->priority << '\n';
     }
     std::cout << "===========================================\n";
 }
@@ -369,17 +431,21 @@ void QueueTwo::insertProcess(Process *proc, bool strict) {
     }
 }
 
+void QueueTwo::headInsert(Process *proc) {
+    queue.insert(queue.begin(), proc);
+}
+
 void QueueOne::printContent() {
     std::vector<Process*>::iterator it;
     for (it = queue.begin(); it < queue.end(); it++) {
-        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->end << ' ' << (*it)->ready << ' ' << (*it)->running << ' ' << (*it)->waiting << '\n';
+        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->end << ' ' << (*it)->ready << ' ' << (*it)->running << ' ' << (*it)->waiting << ' ' << (*it)->age << ' ' << (*it)->priority << '\n';
     }
 }
 
 void QueueTwo::printContent() {
     std::vector<Process*>::iterator it;
     for (it = queue.begin(); it < queue.end(); it++) {
-        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->priority << ' ' << (*it)->age << ' ' << (*it)->totalTickets << '\n';
+        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->end << ' ' << (*it)->ready << ' ' << (*it)->running << ' ' << (*it)->waiting << ' ' << (*it)->age << ' ' << (*it)->priority << '\n';
     }
 }
 
@@ -411,7 +477,7 @@ bool QueueTwo::isEmpty() {
     return empty;
 }
 
-void QueueTwo::ageing(int ageLimit, QueueOne *q1, int const threshold) {
+void QueueTwo::ageing(int ageLimit) {
     int i = 0;
     if (queue.size() > 0) {
         while (i < queue.size()) {
@@ -420,9 +486,17 @@ void QueueTwo::ageing(int ageLimit, QueueOne *q1, int const threshold) {
                 queue[i]->priority += 1;
                 queue[i]->age = 0;
             }
+            i += 1;
+        }
+    }
+}
 
-            if (queue[i]->priority > threshold) {
-                (*q1).insertProcess(queue[i], false);
+void QueueTwo::promote(QueueOne *q1) {
+    int i = 0;
+    if (queue.size() > 0) {
+        while (i < queue.size()) {
+            if (queue[i]->priority > Scheduling::THRESHOLD) {
+                (*q1).insertProcess(queue[i], true);
                 queue.erase(queue.begin() + i);
                 i -= 1;
             }
