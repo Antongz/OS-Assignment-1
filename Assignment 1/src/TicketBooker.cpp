@@ -265,6 +265,11 @@ void Scheduling::start() {
             queue_two.incrementWaiting(processTime);    // Increment waiting time of all processes in queue_two if a process has already ran
             queue_two.ageing(8, &queue_one, THRESHOLD);    // Age the processes in queue_two
     /* ============================ INSERT PROMOTED PROCESS THIRD(END) ========================= */
+
+            if (timer % 5 == 0) {
+                std::cout << "Time (" << timer << ")\n"; 
+                printQueuesContent();
+            }
         }
 
         // while (queue_two.size() > 0 && queue_one.size() == 0) { // Process queue_two
@@ -280,10 +285,10 @@ void Scheduling::printQueuesContent() {
     queue_one.printContent();
     std::cout << "===========================================\n";
     std::cout << "Queue 2\n";
-    queue_two.printContent();
+    // queue_two.printContent();
     std::cout << "===========================================\n";
     std::cout << "HasNotArrived\n";
-    hasNotArrived.printContent();
+    // hasNotArrived.printContent();
     std::cout << "===========================================\n";
     std::cout << "Terminated Processes\n";
     std::vector<Process*>::iterator it;
@@ -367,7 +372,7 @@ void QueueTwo::insertProcess(Process *proc, bool strict) {
 void QueueOne::printContent() {
     std::vector<Process*>::iterator it;
     for (it = queue.begin(); it < queue.end(); it++) {
-        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->priority << ' ' << (*it)->age << ' ' << (*it)->totalTickets << '\n';
+        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->end << ' ' << (*it)->ready << ' ' << (*it)->running << ' ' << (*it)->waiting << '\n';
     }
 }
 
