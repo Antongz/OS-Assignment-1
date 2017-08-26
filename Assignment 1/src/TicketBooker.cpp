@@ -27,7 +27,7 @@ public:
     // Insert an element in queue one(sorted by priority then arrival time then process index)
     void insertProcess(Process*, bool);
     // Pop head of the queue
-    // Process* popHead();
+    Process* popHead();
     // Print contents of it's queue
     void printContent();
 private:
@@ -40,7 +40,7 @@ public:
     // Insert an element in queue two(sorted by arrival time then process index)
     void insertProcess(Process*, bool);
     // Pop head of the queue
-    // Process* popHead();
+    Process* popHead();
     // Print contents of it's queue
     void printContent();
 
@@ -54,9 +54,9 @@ public:
     // Insert an element in queue two(sorted by arrival time then process index)
     void insertProcess(Process*);
     // Return the head of the queue but does not remove it
-    //Process getHead();
+    Process* getHead();
     // Remove the head of the queue
-    // void removeHead();
+    void removeHead();
     // Print contents of it's queue
     void printContent();
 private:
@@ -67,7 +67,7 @@ private:
 class Scheduling {
 public:
     // Start the scheduling algorithm
-    //void start();
+    void start();
     // Read the file and initialize all queues
     void initializeQueues(char*);
     // Print content of queues
@@ -97,6 +97,8 @@ int main(int argc, char *argv[]) {
     std::cout << "Entered main()\n";
 
     ticketBooker.initializeQueues(argv[1]);
+    ticketBooker.printQueuesContent();
+    ticketBooker.start();
     ticketBooker.printQueuesContent();
 }
 
@@ -178,9 +180,17 @@ void Scheduling::initializeQueues(char *filename) {
     processFile.close();
 }
 
-// void Scheduling::start() {
-//     // TODO: Implement scheduling algorithm
-// }
+void Scheduling::start() {
+    std::cout << "Popping head of both queues...\n";
+    Process *proc1 = queue_one.popHead();
+    Process *proc2 = queue_two.popHead();
+    std::cout << proc1->processIndex << ' ' << proc1->arrival << ' ' << proc1->priority << ' ' << proc1->age << ' ' << proc1->totalTickets << '\n';
+    std::cout << proc2->processIndex << ' ' << proc2->arrival << ' ' << proc2->priority << ' ' << proc2->age << ' ' << proc2->totalTickets << '\n';
+    std::cout << "Checking and removing head of hasNotArrived...\n";
+    Process *proc3 = hasNotArrived.getHead();
+    std::cout << proc3->processIndex << ' ' << proc3->arrival << ' ' << proc3->priority << ' ' << proc3->age << ' ' << proc3->totalTickets << '\n';
+    hasNotArrived.removeHead();
+}
 
 void Scheduling::printQueuesContent() {
     std::cout << "===========================================\n";
@@ -263,15 +273,17 @@ void QueueTwo::printContent() {
     }
 }
 
-// Process* QueueOne::popHead() {
-//     // TODO:
-//     return *(queue.begin());
-// }
+Process* QueueOne::popHead() {
+    Process *proc = queue.front();
+    queue.erase(queue.begin());
+    return proc;
+}
 
-// Process* QueueTwo::popHead() {
-//     // TODO:
-//     return *(queue.begin());
-// }
+Process* QueueTwo::popHead() {
+    Process *proc = queue.front();
+    queue.erase(queue.begin());
+    return proc;
+}
 
 void HasNotArrived::insertProcess(Process *proc) {
     int i = 0;
@@ -293,6 +305,15 @@ void HasNotArrived::insertProcess(Process *proc) {
     } else {
         queue.insert(queue.begin() + i - 1, proc);
     }
+}
+
+Process* HasNotArrived::getHead() {
+    Process *proc = queue.front();
+    return proc;
+}
+
+void HasNotArrived::removeHead() {
+    queue.erase(queue.begin());
 }
 
 void HasNotArrived::printContent() {
