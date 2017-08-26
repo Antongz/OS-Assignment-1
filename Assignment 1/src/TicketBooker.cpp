@@ -34,34 +34,34 @@ private:
     std::vector<Process*> queue; // Highest priority queue
 };
 
-// /* ================= QueueTwo class ================= */
-// class QueueTwo {
-// public:
-//     // Insert an element in queue two(sorted by arrival time then process index)
-//     void insertProcess(Process*, bool);
-//     // Pop head of the queue
-//     Process* popHead();
-//     // Print contents of it's queue
-//     void printContent();
+/* ================= QueueTwo class ================= */
+class QueueTwo {
+public:
+    // Insert an element in queue two(sorted by arrival time then process index)
+    void insertProcess(Process*, bool);
+    // Pop head of the queue
+    // Process* popHead();
+    // Print contents of it's queue
+    void printContent();
 
-// private:
-//     std::vector<Process*> queue; // Lowest priority queue
-// };
+private:
+    std::vector<Process*> queue; // Lowest priority queue
+};
 
-// /* ================= HasNotArrived class ================= */
-// class HasNotArrived {
-// public:
-//     // Insert an element in queue two(sorted by arrival time then process index)
-//     void insertProcess(Process*);
-//     // Return the head of the queue but does not remove it
-//     //Process getHead();
-//     // Remove the head of the queue
-//     void removeHead();
-//     // Print contents of it's queue
-//     void printContent();
-// private:
-//     std::vector<Process*> queue;    // Processes that has not arrived yet
-// };
+/* ================= HasNotArrived class ================= */
+class HasNotArrived {
+public:
+    // Insert an element in queue two(sorted by arrival time then process index)
+    void insertProcess(Process*);
+    // Return the head of the queue but does not remove it
+    //Process getHead();
+    // Remove the head of the queue
+    // void removeHead();
+    // Print contents of it's queue
+    void printContent();
+private:
+    std::vector<Process*> queue;    // Processes that has not arrived yet
+};
 
 /* ================= Scheduling class ================= */
 class Scheduling {
@@ -79,9 +79,9 @@ private:
     int const THRESHOLD = 2;
     long timer;
     QueueOne queue_one;
-    // QueueTwo queue_two;
-    // HasNotArrived hasNotArrived;
-    // std::vector<Process*> terminatedProcesses;
+    QueueTwo queue_two;
+    HasNotArrived hasNotArrived;
+    std::vector<Process*> terminatedProcesses;
 };
 
 /* ====================== Main program =================== */
@@ -160,20 +160,18 @@ void Scheduling::initializeQueues(char *filename) {
                 str = "";
             }
         }
-        
-        // printQueuesContent();
 
         // Store process into the correct queue
         if (proc->arrival == 0) {
             if (proc->priority > THRESHOLD) {
-                std::cout << proc->processIndex << ' ' << proc->arrival << ' ' << proc->priority << ' ' << proc->age << ' ' << proc->totalTickets << '\n';
+                // std::cout << proc->processIndex << ' ' << proc->arrival << ' ' << proc->priority << ' ' << proc->age << ' ' << proc->totalTickets << '\n';
                 queue_one.insertProcess(proc, true);
-            } //else {
-            //     queue_two.insertProcess(proc, true);
-            // }
-        } //else {
-            // hasNotArrived.insertProcess(proc);
-        // }
+            } else {
+                queue_two.insertProcess(proc, true);
+            }
+        } else {
+            hasNotArrived.insertProcess(proc);
+        }
     }
 
     // Close the file
@@ -185,21 +183,22 @@ void Scheduling::initializeQueues(char *filename) {
 // }
 
 void Scheduling::printQueuesContent() {
+    std::cout << "===========================================\n";
     std::cout << "Queue 1\n";
     queue_one.printContent();
     std::cout << "===========================================\n";
     std::cout << "Queue 2\n";
-    // queue_two.printContent();
+    queue_two.printContent();
     std::cout << "===========================================\n";
     std::cout << "HasNotArrived\n";
-    // hasNotArrived.printContent();
+    hasNotArrived.printContent();
+    std::cout << "===========================================\n";
 }
 
 void QueueOne::insertProcess(Process *proc, bool strict) {
-    std::cout << "Enter Here!";
     int i = 0;
     if (queue.size() > 0) {   // Check if the queue is not empty
-        while (queue[i]->priority >= proc->priority && i < queue.size()) {    // Find insert position
+        while (i < queue.size() && queue[i]->priority >= proc->priority) {    // Find insert position
             if (strict == false) {  // Insert by priority then arrival time then process index
                 if (queue[i]->priority == proc->priority) { // Order according to arrival time
                     if (queue[i]->arrival > proc->arrival) {    // For promoted processes
@@ -217,41 +216,38 @@ void QueueOne::insertProcess(Process *proc, bool strict) {
     }
 
     if (i == 0) {   // Process has highest priority
-        std::cout << "Insert at head!\n";
         queue.insert(queue.begin(), proc);
-    } //else if (i == queue.size()) {   // Process has lowest priority
-    //     std::cout << "Insert at the end!\n";
-    //     queue.insert(queue.end() - 1, proc);
-    // } 
+    } else if (i == queue.size()) {   // Process has lowest priority
+        queue.insert(queue.end(), proc);
+     } 
     else {
-        std::cout << "Insert at the mid!\n";
-        queue.insert(queue.begin() - i - 1, proc);
+        queue.insert(queue.begin() + i - 1, proc);
     }
 }
 
-// void QueueTwo::insertProcess(Process *proc, bool strict) {
-//     int i = 0;
-//     if (queue.size() > 0) {   // Check if the queue is not empty
-//         while (queue[i]->arrival <= proc->arrival && i < queue.size()) {    // Find insert position
-//             if (strict == false) {  // Insert by arrival time then process index
-//                 if (queue[i]->arrival == proc->arrival) {
-//                     if ((queue[i]->processIndex).compare(proc->processIndex) > 0) {
-//                         break;
-//                     }
-//                 }
-//             }
-//             i += 1;
-//         }
-//     }
+void QueueTwo::insertProcess(Process *proc, bool strict) {
+    int i = 0;
+    if (queue.size() > 0) {   // Check if the queue is not empty
+        while (i < queue.size() && queue[i]->arrival <= proc->arrival) {    // Find insert position
+            if (strict == false) {  // Insert by arrival time then process index
+                if (queue[i]->arrival == proc->arrival) {
+                    if ((queue[i]->processIndex).compare(proc->processIndex) > 0) {
+                        break;
+                    }
+                }
+            }
+            i += 1;
+        }
+    }
 
-//     if (i == 0) {   // Process has highest priority
-//         queue.insert(queue.begin(), proc);
-//     } else if (i == queue.size()) {   // Process has lowest priority
-//         queue.insert(queue.end() - 1, proc);
-//     } else {
-//         queue.insert(queue.begin() - i - 1, proc);
-//     }
-// }
+    if (i == 0) {   // Process has earliest arrival time
+        queue.insert(queue.begin(), proc);
+    } else if (i == queue.size()) {   // Process has latest arrival time
+        queue.insert(queue.end(), proc);
+    } else {
+        queue.insert(queue.begin() + i - 1, proc);
+    }
+}
 
 void QueueOne::printContent() {
     std::vector<Process*>::iterator it;
@@ -260,12 +256,12 @@ void QueueOne::printContent() {
     }
 }
 
-// void QueueTwo::printContent() {
-//     std::vector<Process*>::iterator it;
-//     for (it = queue.begin(); it < queue.end(); it++) {
-//         std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->priority << (*it)->age << (*it)->totalTickets << '\n';
-//     }
-// }
+void QueueTwo::printContent() {
+    std::vector<Process*>::iterator it;
+    for (it = queue.begin(); it < queue.end(); it++) {
+        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->priority << ' ' << (*it)->age << ' ' << (*it)->totalTickets << '\n';
+    }
+}
 
 // Process* QueueOne::popHead() {
 //     // TODO:
@@ -277,31 +273,31 @@ void QueueOne::printContent() {
 //     return *(queue.begin());
 // }
 
-// void HasNotArrived::insertProcess(Process *proc) {
-//     int i = 0;
-//     if (queue.size() > 0) {   // Check if the queue is not empty
-//         while (queue[i]->arrival <= proc->arrival && i < queue.size()) {    // Find insert position
-//             if (queue[i]->arrival == proc->arrival) {
-//                 if ((queue[i]->processIndex).compare(proc->processIndex) > 0) {
-//                     break;
-//                 }
-//             }
-//             i += 1;
-//         }
-//     }
+void HasNotArrived::insertProcess(Process *proc) {
+    int i = 0;
+    if (queue.size() > 0) {   // Check if the queue is not empty
+        while (i < queue.size() && queue[i]->arrival <= proc->arrival) {    // Find insert position
+            if (queue[i]->arrival == proc->arrival) {
+                if ((queue[i]->processIndex).compare(proc->processIndex) > 0) {
+                    break;
+                }
+            }
+            i += 1;
+        }
+    }
 
-//     if (i == 0) {   // Process has highest priority
-//         queue.insert(queue.begin(), proc);
-//     } else if (i == queue.size()) {   // Process has lowest priority
-//         queue.insert(queue.end() - 1, proc);
-//     } else {
-//         queue.insert(queue.begin() - i - 1, proc);
-//     }
-// }
+    if (i == 0) {   // Process has highest priority
+        queue.insert(queue.begin(), proc);
+    } else if (i == queue.size()) {   // Process has lowest priority
+        queue.insert(queue.end(), proc);
+    } else {
+        queue.insert(queue.begin() + i - 1, proc);
+    }
+}
 
-// void HasNotArrived::printContent() {
-//     std::vector<Process*>::iterator it;
-//     for (it = queue.begin(); it < queue.end(); it++) {
-//         std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->priority << (*it)->age << (*it)->totalTickets << '\n';
-//     }
-// }
+void HasNotArrived::printContent() {
+    std::vector<Process*>::iterator it;
+    for (it = queue.begin(); it < queue.end(); it++) {
+        std::cout << (*it)->processIndex << ' ' << (*it)->arrival << ' ' << (*it)->priority << ' ' << (*it)->age << ' ' << (*it)->totalTickets << '\n';
+    }
+}
