@@ -115,7 +115,6 @@ int main(int argc, char *argv[]) {
     ticketBooker.initializeQueues(argv[arg]);
     // ticketBooker.printQueuesContent();
     ticketBooker.start();
-    // std::cout << '\n';
     ticketBooker.printQueuesContent();
 }
 
@@ -352,22 +351,25 @@ void Scheduling::printQueuesContent() {
     if (debug_mode) {
         std::cout << "===========================================\n";
         std::cout << "Queue 1\n";
+        std::cout << "name" << "\t\t" << "arrival" << "\t\t" << "end" << "\t\t" << "ready" << "\t\t" << "running" << "\t\t" << "waiting" << "\t\t" << "age" << "\t\t" << "priority" << '\n';
         queue_one.printQueue();
         std::cout << "===========================================\n";
         std::cout << "Queue 2\n";
+        std::cout << "name" << "\t\t" << "arrival" << "\t\t" << "end" << "\t\t" << "ready" << "\t\t" << "running" << "\t\t" << "waiting" << "\t\t" << "age" << "\t\t" << "priority" << '\n';
         queue_two.printQueue();
         std::cout << "===========================================\n";
         std::cout << "HasNotArrived\n";
+        std::cout << "name" << "\t\t" << "arrival" << "\t\t" << "end" << "\t\t" << "ready" << "\t\t" << "running" << "\t\t" << "waiting" << "\t\t" << "age" << "\t\t" << "priority" << '\n';
         hasNotArrived.printQueue();
         std::cout << "===========================================\n";
         std::cout << "Terminated Processes\n";
-        std::cout << "name" << "\t" << "arrival" << "\t" << "end" << "\t" << "ready" << "\t" << "running" << "\t" << "waiting" << '\n';
+        std::cout << "name" << "\t\t" << "arrival" << "\t\t" << "end" << "\t\t" << "ready" << "\t\t" << "running" << "\t\t" << "waiting" << '\n';
         for (it = terminatedProcesses.begin(); it < terminatedProcesses.end(); it++) {
             std::cout << (*it)->processIndex << "\t\t" << (*it)->arrival << "\t\t" << (*it)->end << "\t\t" << (*it)->ready << "\t\t" << (*it)->running << "\t\t" << (*it)->waiting << "\t\t" << '\n';
         }
         std::cout << "===========================================\n";
     } else {
-        std::cout << "name" << "\t" << "arrival" << "\t" << "end" << "\t" << "ready" << "\t" << "running" << "\t" << "waiting" << '\n';
+        std::cout << "name" << "\t\t" << "arrival" << "\t\t" << "end" << "\t\t" << "ready" << "\t\t" << "running" << "\t\t" << "waiting" << '\n';
         for (it = terminatedProcesses.begin(); it < terminatedProcesses.end(); it++) {
             std::cout << (*it)->processIndex << "\t\t" << (*it)->arrival << "\t\t" << (*it)->end << "\t\t" << (*it)->ready << "\t\t" << (*it)->running << "\t\t" << (*it)->waiting << "\t\t" << '\n';
         }
