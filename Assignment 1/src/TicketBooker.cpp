@@ -79,6 +79,8 @@ public:
     void initializeQueues(char*);
     // Print content of queues
     void printQueuesContent();
+    // Check new arrival processes and insert into the correct queue
+    void insertNewArrivalProcess();
     
 private:
     int const QUEUE_ONE_TIME_QUOTA = 5;
@@ -216,22 +218,9 @@ void Scheduling::start() {
                 inQueueProcess->totalTickets -= 1;
                 processTime += 1;
     /* ============================ INSERT NEW ARRIVAL PROCESS FIRST(START) ========================= */
-                while (!hasNotArrived.isEmpty()) {
-                    newArrivalProcess = hasNotArrived.getHead();
-                    if (newArrivalProcess->arrival == timer) {   // Check if there are processes that has arrived
-                        if (newArrivalProcess->priority > THRESHOLD) {  // Insert into queue_one
-                            queue_one.insertProcess(newArrivalProcess, true);
-                        } else {    // Insert into queue_two
-                            newArrivalProcess->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;
-                            queue_two.insertProcess(newArrivalProcess, true);
-                        }
-                        hasNotArrived.removeHead();
-                    } else {
-                        break;
-                    }
-                }
+                insertNewArrivalProcess();
+    /* ============================ INSERT NEW ARRIVAL PROCESS FIRST(END) =========================== */
             }
-    /* ============================ INSERT NEW ARRIVAL PROCESS FIRST(END) ========================= */
             inQueueProcess->running += processTime;
             inQueueProcess->runningInQueueOne += processTime;
             // Increment waiting time of all the processes in both queues if a process has already ran
@@ -259,7 +248,7 @@ void Scheduling::start() {
     /* ============================ INSERT PRE-EMPTED PROCESS SECOND(END) ========================= */
     /* ============================ INSERT PROMOTED PROCESS THIRD(START) ========================= */
             queue_two.promote(&queue_one);    // Promote processes in queue_two
-    /* ============================ INSERT PROMOTED PROCESS THIRD(END) ========================= */
+    /* ============================ INSERT PROMOTED PROCESS THIRD(END) =========================== */
 
             /* ====== DEBUGGING PURPOSES ====== */
             if (debug_mode) {
@@ -283,23 +272,9 @@ void Scheduling::start() {
                 inQueueProcess->totalTickets -= 1;
                 inQueueProcess->remainingTimeQuota -= 1;
     /* ============================ INSERT NEW ARRIVAL PROCESS FIRST(START) ========================= */
-                while (!hasNotArrived.isEmpty()) {
-                    newArrivalProcess = hasNotArrived.getHead();
-                    if (newArrivalProcess->arrival == timer) {   // Check if there are processes that has arrived
-                        if (newArrivalProcess->priority > THRESHOLD) {  // Insert into queue_one
-                            queue_one.insertProcess(newArrivalProcess, true);
-                        } else {    // Insert into queue_two
-                            newArrivalProcess->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;
-                            queue_two.insertProcess(newArrivalProcess, true);
-                        }
-                        hasNotArrived.removeHead();
-                    } else {
-                        break;
-                    }
-                }
+                insertNewArrivalProcess();
+    /* ============================ INSERT NEW ARRIVAL PROCESS FIRST(END) =========================== */
             } 
-            
-    /* ============================ INSERT NEW ARRIVAL PROCESS FIRST(END) ========================= */
             inQueueProcess->running += processTime;
             queue_two.incrementWaiting(processTime);
             queue_two.ageing(8);    // Age the processes in queue_two
@@ -313,10 +288,10 @@ void Scheduling::start() {
                 inQueueProcess->end = timer;
                 terminatedProcesses.insert(terminatedProcesses.end(), inQueueProcess);
             }
-    /* ============================ INSERT PRE-EMPTED PROCESS SECOND(END) ========================= */
+    /* ============================ INSERT PRE-EMPTED PROCESS SECOND(END) ========================== */
     /* ============================ INSERT PROMOTED PROCESS THIRD(START) ========================= */
             queue_two.promote(&queue_one);    // Promote processes from queue_two to queue_one
-    /* ============================ INSERT PROMOTED PROCESS THIRD(END) ========================= */
+    /* ============================ INSERT PROMOTED PROCESS THIRD(END) =========================== */
             
             /* ====== DEBUGGING PURPOSES ====== */
             if (debug_mode) {
@@ -342,6 +317,26 @@ void Scheduling::start() {
     }
 }
 
+void Scheduling::insertNewArrivalProcess() {
+    Process *newProcess;
+
+    while (!hasNotArrived.isEmpty()) {
+        newProcess = hasNotArrived.getHead();
+        if (newProcess->arrival == timer) {   // Check if there are processes that has arrived
+            if (newProcess->priority > THRESHOLD) {  // Insert into queue_one
+                queue_one.insertProcess(newProcess, true);
+            } else {    // Insert into queue_two
+                newProcess->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;
+                queue_two.insertProcess(newProcess, true);
+            }
+            hasNotArrived.removeHead();
+        } else {
+            break;
+        }
+    }
+}
+
+// Constructor
 Scheduling::Scheduling(bool debug_mode) {
     this->debug_mode = debug_mode;
 }
