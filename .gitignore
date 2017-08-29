@@ -1,10 +1,6 @@
 Assignment\ 1/src/*.o
 .DS_Store
-<<<<<<< HEAD
-Assignment\ 1/src/.*
-=======
-Assignment\ 1/src/TicketBooker
+Assignment\ 1/src/TicketBooker.o
 Assignment\ 1/src/*.dSYM
 Assignment\ 1/src/.vscode
->>>>>>> 550f9ece8a045375f196f13539321f1b773c6ace
-Assignment\ 1/src/output.txt
+Assignment\ 1/src/output

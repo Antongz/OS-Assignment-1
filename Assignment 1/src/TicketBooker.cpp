@@ -1,3 +1,10 @@
+/*
+ *  Author(s): Cyrus Villacampa - a1709135
+ *             Mohammad Idrees Rezai - a1687415
+ *
+ *  Operating Systems - COMP SCI 3004 - Assignment 1
+ */
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -11,7 +18,6 @@ struct Process {
     long arrival;   // Initial arrival time of the process
     long totalTickets;  // Number of tickets to be processed
     long running = 0;   // Total time the process has ran
-    long sinceFirstRun = -1; // The time it first ran
     long runningInQueueOne = 0; // Total time the process has ran in queue one
     long remainingTimeQuota = 0;    // Total time quota in queue two
     long waiting = 0;   // Total time the process has waited since it's first run
@@ -22,6 +28,7 @@ struct Process {
     std::string processIndex;   // Process ID
 };
 
+/* ================= Queue class ================= */
 class Queue {
 public:
     // Pop head of the queue
@@ -46,14 +53,14 @@ protected:
 class QueueOne : public Queue {
 public:
     // Insert an element in queue one(sorted by priority then arrival time then process index)
-    void insertProcess(Process*, bool);
+    void insertProcess(Process*);
 };
 
 /* ================= QueueTwo class ================= */
 class QueueTwo : public Queue {
 public:
     // Insert an element in queue two(sorted by arrival time then process index)
-    void insertProcess(Process*, bool);
+    void insertProcess(Process*);
     // Age the processes
     void ageing(int);
     // Promote aged processes
@@ -72,6 +79,10 @@ class Scheduling {
 public:
     Scheduling(bool);
     static int const THRESHOLD = 2;
+    int const QUEUE_ONE_TIME_QUOTA = 5;
+    int const QUEUE_TWO_TIME_QUOTA = 20;
+    int const NUM_RUNS = 25;
+    int const AGE_THRESHOLD = 8;
     static long timer;
     // Start the scheduling algorithm
     void start();
@@ -83,8 +94,6 @@ public:
     void insertNewArrivalProcess();
     
 private:
-    int const QUEUE_ONE_TIME_QUOTA = 5;
-    int const QUEUE_TWO_TIME_QUOTA = 20;
     QueueOne queue_one;
     QueueTwo queue_two;
     HasNotArrived hasNotArrived;
@@ -115,13 +124,20 @@ int main(int argc, char *argv[]) {
     Scheduling ticketBooker(debug_mode); 
 
     ticketBooker.initializeQueues(argv[arg]);
-    // ticketBooker.printQueuesContent();
     ticketBooker.start();
     ticketBooker.printQueuesContent();
 }
 
 /* ====================== Class member function implementations ================== */
 
+/* 
+ *  ================================================================================
+ *  INPUT: char*(the name of the file)
+ *  OUTPUT: NA
+ *  DESCRIPTION: This function reads the given file and initializes the queues with
+ *               the read contents of the file.
+ *  ================================================================================
+ */
 void Scheduling::initializeQueues(char *filename) {
     // Open the file
     std::ifstream processFile (filename);
@@ -184,10 +200,10 @@ void Scheduling::initializeQueues(char *filename) {
         // Store process into the correct queue
         if (proc->arrival == 0) {
             if (proc->priority > THRESHOLD) {
-                queue_one.insertProcess(proc, true);
+                queue_one.insertProcess(proc);
             } else {
                 proc->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;
-                queue_two.insertProcess(proc, true);
+                queue_two.insertProcess(proc);
             }
         } else {
             hasNotArrived.insertProcess(proc);
@@ -198,6 +214,14 @@ void Scheduling::initializeQueues(char *filename) {
     processFile.close();
 }
 
+/* 
+ *  ================================================================================
+ *  INPUT: NA
+ *  OUTPUT: NA
+ *  DESCRIPTION: This function is the implementation of the scheduling algorithm as
+ *               specified in the assignment handouts.
+ *  ================================================================================
+ */
 void Scheduling::start() {
     while (!queue_one.isEmpty() || !queue_two.isEmpty() || !hasNotArrived.isEmpty()) {
         int processTime = 0;
@@ -205,9 +229,6 @@ void Scheduling::start() {
         while (!queue_one.isEmpty()) {  // Process queue_one first
             processTime = 0;
             inQueueProcess = queue_one.popHead();   // Process the highest priority first
-            if (inQueueProcess->sinceFirstRun == -1) {
-                inQueueProcess->sinceFirstRun = timer;
-            }
             
             if (inQueueProcess->ready == -1) {
                 inQueueProcess->ready = timer;
@@ -229,17 +250,17 @@ void Scheduling::start() {
             queue_two.ageing(8);    // Age the processes in queue_two
     /* ============================ INSERT PRE-EMPTED PROCESS SECOND(START) ========================= */
             if (inQueueProcess->totalTickets != 0) {
-                if (inQueueProcess->runningInQueueOne == 25) {
+                if (inQueueProcess->runningInQueueOne == NUM_RUNS) {
                     inQueueProcess->priority -= 1;  // Decrease priority
                     inQueueProcess->runningInQueueOne = 0;  // Reset counter for total time running in queue_one
                     if (inQueueProcess->priority <= THRESHOLD) {    // Demote process
                         inQueueProcess->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;  // Initialize time quota
                         queue_two.tailInsert(inQueueProcess);
                     } else {
-                        queue_one.insertProcess(inQueueProcess, true); // Insert back into queue_one
+                        queue_one.insertProcess(inQueueProcess); // Insert back into queue_one
                     }
                 } else {
-                    queue_one.insertProcess(inQueueProcess, true); // Insert back into queue_one
+                    queue_one.insertProcess(inQueueProcess); // Insert back into queue_one
                 }
             } else {    // Pre-empted process has finished its job
                 inQueueProcess->end = timer;
@@ -262,8 +283,8 @@ void Scheduling::start() {
         while (!queue_two.isEmpty() && queue_one.isEmpty()) { // Process queue_two
             processTime = 0;
             inQueueProcess = queue_two.popHead();
-            if (inQueueProcess->sinceFirstRun == -1) {   // Store the time this process first ran
-                inQueueProcess->sinceFirstRun = timer;
+            if (inQueueProcess->ready == -1) {   // Store the time this process first ran
+                inQueueProcess->ready = timer;
             }
             inQueueProcess->age = 0;    // Reset age
             while (inQueueProcess->totalTickets > 0 && inQueueProcess->remainingTimeQuota > 0 && queue_one.isEmpty()) {
@@ -277,7 +298,7 @@ void Scheduling::start() {
             } 
             inQueueProcess->running += processTime;
             queue_two.incrementWaiting(processTime);
-            queue_two.ageing(8);    // Age the processes in queue_two
+            queue_two.ageing(AGE_THRESHOLD);    // Age the processes in queue_two
     /* ============================ INSERT PRE-EMPTED PROCESS SECOND(START) ========================= */
             if (inQueueProcess->totalTickets != 0) {
                 if (inQueueProcess->remainingTimeQuota == 0) {  // No new process arrived in queue_one
@@ -305,9 +326,9 @@ void Scheduling::start() {
             timer = newArrivalProcess->arrival;
             do {
                 if (newArrivalProcess->priority > THRESHOLD) {  // Insert into queue_one
-                    queue_one.insertProcess(newArrivalProcess, false);
+                    queue_one.insertProcess(newArrivalProcess);
                 } else {    // Insert into queue_two
-                    queue_two.insertProcess(newArrivalProcess, false);
+                    queue_two.insertProcess(newArrivalProcess);
                 }
                 hasNotArrived.removeHead();
                 newArrivalProcess = hasNotArrived.getHead();
@@ -317,6 +338,14 @@ void Scheduling::start() {
     }
 }
 
+/* 
+ *  ================================================================================
+ *  INPUT: NA
+ *  OUTPUT: NA
+ *  DESCRIPTION: This function checks if there are processes has arrived and calls
+ *               a function to insert those processes in the appropriate queue.
+ *  ================================================================================
+ */
 void Scheduling::insertNewArrivalProcess() {
     Process *newProcess;
 
@@ -324,10 +353,10 @@ void Scheduling::insertNewArrivalProcess() {
         newProcess = hasNotArrived.getHead();
         if (newProcess->arrival == timer) {   // Check if there are processes that has arrived
             if (newProcess->priority > THRESHOLD) {  // Insert into queue_one
-                queue_one.insertProcess(newProcess, true);
+                queue_one.insertProcess(newProcess);
             } else {    // Insert into queue_two
                 newProcess->remainingTimeQuota = QUEUE_TWO_TIME_QUOTA;
-                queue_two.insertProcess(newProcess, true);
+                queue_two.insertProcess(newProcess);
             }
             hasNotArrived.removeHead();
         } else {
@@ -372,22 +401,17 @@ void Scheduling::printQueuesContent() {
         
 }
 
-void QueueOne::insertProcess(Process *proc, bool strict) {
+/* 
+ *  ================================================================================
+ *  INPUT: Process*(pointer to a process object)
+ *  OUTPUT: NA
+ *  DESCRIPTION: This function insert a process into queue one based on the priority.
+ *  ================================================================================
+ */
+void QueueOne::insertProcess(Process *proc) {
     u_int i = 0;
     if (queue.size() > 0) {   // Check if the queue is not empty
         while (i < queue.size() && queue[i]->priority >= proc->priority) {    // Find insert position
-            if (strict == false) {  // Insert by priority then arrival time then process index
-                if (queue[i]->priority == proc->priority) { // Order according to arrival time
-                    if (queue[i]->arrival > proc->arrival) {    // For promoted processes
-                        break;
-                    }
-                    if (queue[i]->arrival == proc->arrival) { // Order according to process index
-                        if ((queue[i]->processIndex).compare(proc->processIndex) > 0) {
-                            break;
-                        }
-                    }
-                }
-            }
             i += 1;
         }
     }
@@ -401,17 +425,18 @@ void QueueOne::insertProcess(Process *proc, bool strict) {
     }
 }
 
-void QueueTwo::insertProcess(Process *proc, bool strict) {
+/* 
+ *  ================================================================================
+ *  INPUT: Process*(pointer to a process object)
+ *  OUTPUT: NA
+ *  DESCRIPTION: This function insert a process into queue two based on the arrival
+ *               time.
+ *  ================================================================================
+ */
+void QueueTwo::insertProcess(Process *proc) {
     u_int i = 0;
     if (queue.size() > 0) {   // Check if the queue is not empty
         while (i < queue.size() && queue[i]->arrival <= proc->arrival) {    // Find insert position
-            if (strict == false) {  // Insert by arrival time then process index
-                if (queue[i]->arrival == proc->arrival) {
-                    if ((queue[i]->processIndex).compare(proc->processIndex) > 0) {
-                        break;
-                    }
-                }
-            }
             i += 1;
         }
     }
@@ -425,6 +450,15 @@ void QueueTwo::insertProcess(Process *proc, bool strict) {
     }
 }
 
+/* 
+ *  ================================================================================
+ *  INPUT: integer
+ *  OUTPUT: NA
+ *  DESCRIPTION: This function ages the processes in a queue by incrementing age of
+ *               each process in the queue. The function also increases the process'
+ *               priority if their age has reached a specific limit.
+ *  ================================================================================
+ */
 void QueueTwo::ageing(int ageLimit) {
     u_int i = 0;
     if (queue.size() > 0) {
@@ -441,12 +475,21 @@ void QueueTwo::ageing(int ageLimit) {
     }
 }
 
+/* 
+ *  ================================================================================
+ *  INPUT: QueueOne*(pointer to a higher priority queue)
+ *  OUTPUT: NA
+ *  DESCRIPTION: This function promotes(i.e. transfer a process from a lower priority
+ *               queue to a higher priority queue) a process in a queue if their
+ *               priority is greater than the threshold.
+ *  ================================================================================
+ */
 void QueueTwo::promote(QueueOne *q1) {
     u_int i = 0;
     if (queue.size() > 0) {
         while (i < queue.size()) {
             if (queue[i]->priority > Scheduling::THRESHOLD) {
-                (*q1).insertProcess(queue[i], true);
+                (*q1).insertProcess(queue[i]);
                 queue.erase(queue.begin() + i);
                 i -= 1;
             }
@@ -455,6 +498,14 @@ void QueueTwo::promote(QueueOne *q1) {
     }
 }
 
+/* 
+ *  ================================================================================
+ *  INPUT: Process*(pointer to a process object)
+ *  OUTPUT: NA
+ *  DESCRIPTION: This function insert a process into the queue based on the arrival
+ *               time.
+ *  ================================================================================
+ */
 void HasNotArrived::insertProcess(Process *proc) {
     u_int i = 0;
     if (queue.size() > 0) {   // Check if the queue is not empty
@@ -477,8 +528,13 @@ void HasNotArrived::insertProcess(Process *proc) {
     }
 }
 
-/* ========================= QUEUE CLASS IMPLEMENTATION FUNCTION ================= */
-
+/* 
+ *  ================================================================================
+ *  INPUT: NA
+ *  OUTPUT: NA
+ *  DESCRIPTION: Prints out the content of the queue
+ *  ================================================================================
+ */
 void Queue::printQueue() {
     std::vector<Process*>::iterator it;
     for (it = queue.begin(); it < queue.end(); it++) {
@@ -513,10 +569,18 @@ void Queue::tailInsert(Process *proc) {
     queue.insert(queue.end(), proc);
 }
 
+/* 
+ *  ================================================================================
+ *  INPUT: integer
+ *  OUTPUT: NA
+ *  DESCRIPTION: This function increments the waiting time of the process of the
+ *               queue.
+ *  ================================================================================
+ */
 void Queue::incrementWaiting(int time) {
     std::vector<Process*>::iterator it;
     for (it = queue.begin(); it < queue.end(); it += 1) {
-        if ((*it)->sinceFirstRun != -1) {
+        if ((*it)->ready != -1) {
             (*it)->waiting += time;
         }
     }
